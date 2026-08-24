@@ -28,7 +28,7 @@
 			"UUID": "com.sb.output-volume.dial",
 			"Icon": "imgs/speaker",
 			"Tooltip": "Shows and adjusts the current output device volume. Press to mute.",
-			"Controllers": ["Encoder"],
+			"Controllers": ["Encoder", "Keypad"],
 			"Encoder": {
 				"layout": "$B1",
 				"TriggerDescription": {

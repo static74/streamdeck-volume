@@ -140,7 +140,12 @@ function feedbackPayload() {
 function render() {
 	const payload = feedbackPayload();
 	for (const a of dial.actions) {
-		a.setFeedback(payload);
+		if (typeof a.setFeedback === "function") {
+			a.setFeedback(payload);
+		} else {
+			a.setTitle(payload.value);
+			a.setImage(state.muted ? "imgs/muted.svg" : "imgs/speaker.svg");
+		}
 	}
 }
 
@@ -166,6 +171,10 @@ class VolumeDial extends SingletonAction {
 	}
 
 	onTouchTap() {
+		this.#toggleMute();
+	}
+
+	onKeyDown() {
 		this.#toggleMute();
 	}
 
