@@ -1,0 +1,4 @@
+com.sb.output-volume.sdPlugin/node_modules/
+com.sb.output-volume.sdPlugin/bin/audioctl
+com.sb.output-volume.sdPlugin/logs/
+.DS_Store

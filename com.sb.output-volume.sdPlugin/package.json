@@ -1,0 +1,9 @@
+{
+  "name": "output-volume-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@elgato/streamdeck": "^2.1.2"
+  },
+  "private": true
+}
