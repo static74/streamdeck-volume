@@ -37,3 +37,33 @@ export function formatRate(hz) {
 	const k = hz / 1000;
 	return (Number.isInteger(k) ? k : k.toFixed(1)) + "k";
 }
+
+// Press-and-turn state machine. down() starts a press; rotate() while
+// pressed previews device candidates; up() resolves to a mute toggle
+// (plain press) or a device switch (press-and-turn).
+export function pressTracker() {
+	let pressed = false;
+	let rotated = false;
+	let index = 0;
+	return {
+		down(startIndex) {
+			pressed = true;
+			rotated = false;
+			index = startIndex;
+		},
+		rotate(ticks, length) {
+			if (!pressed || length === 0) return null;
+			rotated = true;
+			index = cycle(length, index, ticks);
+			return { type: "preview", index };
+		},
+		up() {
+			if (!pressed) return { type: "none" };
+			pressed = false;
+			return rotated ? { type: "switch", index } : { type: "mute" };
+		},
+		get pressed() {
+			return pressed;
+		},
+	};
+}

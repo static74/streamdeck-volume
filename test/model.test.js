@@ -65,3 +65,29 @@ test("formatRate renders kHz labels", async () => {
 	assert.equal(formatRate(48000), "48k");
 	assert.equal(formatRate(96000), "96k");
 });
+
+test("pressTracker: plain press resolves to mute", async () => {
+	const { pressTracker } = await import("../com.sb.output-volume.sdPlugin/bin/model.js");
+	const t = pressTracker();
+	t.down(2);
+	assert.deepEqual(t.up(), { type: "mute" });
+	assert.deepEqual(t.up(), { type: "none" });
+});
+
+test("pressTracker: press-and-turn previews then switches", async () => {
+	const { pressTracker } = await import("../com.sb.output-volume.sdPlugin/bin/model.js");
+	const t = pressTracker();
+	t.down(1);
+	assert.deepEqual(t.rotate(2, 4), { type: "preview", index: 3 });
+	assert.deepEqual(t.rotate(1, 4), { type: "preview", index: 0 });
+	assert.deepEqual(t.up(), { type: "switch", index: 0 });
+});
+
+test("pressTracker: rotation without press or devices is inert", async () => {
+	const { pressTracker } = await import("../com.sb.output-volume.sdPlugin/bin/model.js");
+	const t = pressTracker();
+	assert.equal(t.rotate(1, 4), null);
+	t.down(0);
+	assert.equal(t.rotate(1, 0), null);
+	assert.deepEqual(t.up(), { type: "mute" });
+});
