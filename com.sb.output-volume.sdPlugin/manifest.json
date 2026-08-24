@@ -30,11 +30,11 @@
 			"Tooltip": "Shows and adjusts the current output device volume. Press to mute.",
 			"Controllers": ["Encoder", "Keypad"],
 			"Encoder": {
-				"layout": "$B1",
+				"layout": "layouts/dial.json",
 				"TriggerDescription": {
 					"Rotate": "Adjust volume",
-					"Push": "Toggle mute",
-					"Touch": "Toggle mute"
+					"Push": "Toggle mute · hold and turn to switch device",
+					"Touch": "Toggle mute · long press to cycle sample rate"
 				}
 			},
 			"States": [

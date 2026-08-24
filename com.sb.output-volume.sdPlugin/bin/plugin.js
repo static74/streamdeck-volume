@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { applyKey, pressTracker, seedVolume, stepVolume } from "./model.js";
+import { applyKey, cycle, formatRate, pressTracker, seedVolume, stepVolume } from "./model.js";
 
 const logger = streamDeck.logger.createScope("output-volume");
 
@@ -45,6 +45,8 @@ const state = {
 	baseline: {}, // device name -> { v, m } from SoundSource prefs
 	ax: true,
 	ssRunning: true,
+	rate: null,
+	rates: [],
 };
 
 let helper = null;
@@ -76,6 +78,8 @@ function handleEvent(ev) {
 		case "device": {
 			state.name = ev.name;
 			state.mode = ev.hasVolume ? "native" : "ss";
+			state.rate = ev.rate ?? null;
+			state.rates = ev.rates ?? [];
 			if (state.mode === "native") {
 				state.volume = ev.v ?? null;
 				state.muted = ev.m ?? false;
@@ -109,6 +113,9 @@ function handleEvent(ev) {
 			}
 			break;
 		}
+		case "rate":
+			state.rate = ev.hz;
+			break;
 	}
 	render();
 }
@@ -140,6 +147,7 @@ function feedbackPayload() {
 	return {
 		title: state.name || "Output",
 		value,
+		rate: state.rate == null ? "" : formatRate(state.rate),
 		indicator: { value: pct ?? 0 },
 		icon: state.muted ? "imgs/muted" : "imgs/speaker",
 	};
@@ -203,7 +211,12 @@ class VolumeDial extends SingletonAction {
 		}
 	}
 
-	onTouchTap() {
+	onTouchTap(ev) {
+		if (ev.payload.hold && state.rates.length > 1) {
+			const next = state.rates[cycle(state.rates.length, state.rates.indexOf(state.rate), 1)];
+			send(`setrate ${next}`);
+			return;
+		}
 		this.#toggleMute();
 	}
 
