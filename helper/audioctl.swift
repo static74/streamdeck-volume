@@ -208,6 +208,38 @@ func startTap() -> Bool {
     return true
 }
 
+// MARK: - Output device switching
+
+func outputDevices() -> [(id: AudioDeviceID, name: String, uid: String)] {
+    var a = addr(kAudioHardwarePropertyDevices, scope: kAudioObjectPropertyScopeGlobal)
+    var size = UInt32(0)
+    guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &a, 0, nil, &size) == noErr,
+          size > 0 else { return [] }
+    var ids = [AudioDeviceID](repeating: 0, count: Int(size) / MemoryLayout<AudioDeviceID>.size)
+    guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &a, 0, nil, &size, &ids) == noErr
+        else { return [] }
+    return ids.filter { dev in
+        // output-capable = has at least one output-scope stream
+        var sa = addr(kAudioDevicePropertyStreams)
+        var ssize = UInt32(0)
+        AudioObjectGetPropertyDataSize(dev, &sa, 0, nil, &ssize)
+        return ssize > 0
+    }.map { ($0, deviceString($0, kAudioObjectPropertyName), deviceString($0, kAudioDevicePropertyDeviceUID)) }
+}
+
+func emitDeviceList() {
+    let devs = outputDevices().map { ["name": $0.name, "uid": $0.uid] }
+    emit(["e": "devices", "devices": devs])
+}
+
+func setDefaultOutput(uid: String) {
+    guard let dev = outputDevices().first(where: { $0.uid == uid })?.id else { return }
+    var a = addr(kAudioHardwarePropertyDefaultOutputDevice, scope: kAudioObjectPropertyScopeGlobal)
+    var id = dev
+    AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &a, 0, nil,
+                               UInt32(MemoryLayout<AudioDeviceID>.size), &id)
+}
+
 // MARK: - Main
 
 let tapOK = startTap()
@@ -236,6 +268,10 @@ DispatchQueue.global().async {
         case "setmute":
             if parts.count > 1 { setMute(currentDevice, parts[1] == "1") }
         case "baseline": emitBaseline()
+        case "list": emitDeviceList()
+        case "setdefault":
+            let uid = String(line.dropFirst("setdefault ".count))
+            if !uid.isEmpty { setDefaultOutput(uid: uid) }
         default: break
         }
     }
