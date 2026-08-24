@@ -268,6 +268,7 @@ func availableRates(_ dev: AudioDeviceID) -> [Int] {
     guard AudioObjectGetPropertyDataSize(dev, &a, 0, nil, &size) == noErr, size > 0 else { return [] }
     var ranges = [AudioValueRange](repeating: AudioValueRange(), count: Int(size) / MemoryLayout<AudioValueRange>.size)
     guard AudioObjectGetPropertyData(dev, &a, 0, nil, &size, &ranges) == noErr else { return [] }
+    // ponytail: discrete rates only (mMinimum per range); continuous min≠max ranges collapse to their floor — expand if a real device ever needs it
     return Array(Set(ranges.map { Int($0.mMinimum) })).sorted()
 }
 
