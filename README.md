@@ -11,9 +11,9 @@ shows nothing.
   AirPods, USB mics) are read and written directly. Always live.
 - Devices without one (pure DACs, monitors over DisplayPort) get
   SoundSource's software gain. The plugin drives it with synthesized
-  media keys and tracks the level itself: seeded from SoundSource's
-  saved prefs, updated by every volume key it observes — its own and
-  your keyboard's.
+  media keys and tracks the level itself: seeded from its own saved
+  state (SoundSource never writes its live volume to disk), updated by
+  every volume key it observes — its own and your keyboard's.
 
 ## Controls
 

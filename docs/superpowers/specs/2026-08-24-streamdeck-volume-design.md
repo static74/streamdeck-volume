@@ -61,11 +61,16 @@ Per current default output device, one of two modes:
   Always live. Key events from the tap are ignored (CoreAudio listener
   already reports the change).
 - **SoundSource mode** (no volume control): the plugin owns the number.
-  Seed from prefs baseline (assume 100% if absent). Every volume key
-  the tap sees — plugin-posted or physical keyboard — moves the model
-  ±1/16 with grid snap: `steps = round(vol*16) + delta`, clamp 0–16.
-  Mute key (non-repeat) toggles the mute flag. Volume keys while muted
-  unmute first.
+  Seed priority (added after the stale-baseline bug): the plugin's own
+  persisted store (`~/Library/Application Support/com.sb.output-volume/
+  state.json`, written on every key-driven change), then SoundSource
+  prefs, then 100%. SoundSource's prefs volume subtree is never
+  rewritten — not even on quit — so it is only a first-sight guess; the
+  live value exists solely in the arkaudiod daemon's memory. Every
+  volume key the tap sees — plugin-posted or physical keyboard — moves
+  the model ±1/16 with grid snap: `steps = round(vol*16) + delta`,
+  clamp 0–16. Mute key (non-repeat) toggles the mute flag. Volume keys
+  while muted unmute first.
 
 The model updates ONLY from helper events. Dial handlers just send
 commands; the resulting event updates the model. One code path, no

@@ -3,9 +3,39 @@ import { spawn, execFile } from "node:child_process";
 import { createInterface } from "node:readline";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyKey, stepVolume } from "./model.js";
+import { homedir } from "node:os";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { applyKey, seedVolume, stepVolume } from "./model.js";
 
 const logger = streamDeck.logger.createScope("output-volume");
+
+// Last-known volume per device, persisted by us. SoundSource's live volume
+// exists only in its daemon's memory, so this file is the best baseline.
+const STATE_DIR = join(homedir(), "Library", "Application Support", "com.sb.output-volume");
+const STATE_FILE = join(STATE_DIR, "state.json");
+
+function loadStore() {
+	try {
+		return JSON.parse(readFileSync(STATE_FILE, "utf8"));
+	} catch {
+		return {};
+	}
+}
+
+let saveTimer = null;
+function saveStore() {
+	clearTimeout(saveTimer);
+	saveTimer = setTimeout(() => {
+		try {
+			mkdirSync(STATE_DIR, { recursive: true });
+			writeFileSync(STATE_FILE, JSON.stringify(store));
+		} catch (err) {
+			logger.error(`state save failed: ${err}`);
+		}
+	}, 500);
+}
+
+const store = loadStore();
 
 const state = {
 	mode: "ss", // "native" (CoreAudio volume control) | "ss" (SoundSource software gain)
@@ -46,9 +76,9 @@ function handleEvent(ev) {
 				state.volume = ev.v ?? null;
 				state.muted = ev.m ?? false;
 			} else {
-				const seed = state.baseline[ev.name];
-				state.volume = seed ? Math.min(seed.v, 1) : 1;
-				state.muted = seed ? seed.m : false;
+				const seed = seedVolume(ev.name, store, state.baseline);
+				state.volume = seed.volume;
+				state.muted = seed.muted;
 				checkSoundSourceRunning();
 			}
 			break;
@@ -65,6 +95,10 @@ function handleEvent(ev) {
 			const next = applyKey(state, ev.k);
 			state.volume = next.volume;
 			state.muted = next.muted;
+			if (state.name) {
+				store[state.name] = { v: state.volume, m: state.muted };
+				saveStore();
+			}
 			break;
 		}
 	}

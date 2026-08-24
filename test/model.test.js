@@ -39,3 +39,13 @@ test("unknown baseline assumes SoundSource's 100% default", () => {
 	const next = applyKey({ volume: null, muted: false }, "down");
 	assert.equal(next.volume, 0.9375);
 });
+
+test("seed prefers own store over stale prefs over default", async () => {
+	const { seedVolume } = await import("../com.sb.output-volume.sdPlugin/bin/model.js");
+	const store = { Bench: { v: 0.8125, m: false } };
+	const prefs = { Bench: { v: 0.4991, m: false }, Other: { v: 0.25, m: true } };
+	// the original bug: prefs said 49.9% while truth was 81.25%
+	assert.equal(seedVolume("Bench", store, prefs).volume, 0.8125);
+	assert.deepEqual(seedVolume("Other", store, prefs), { volume: 0.25, muted: true });
+	assert.deepEqual(seedVolume("New Device", store, prefs), { volume: 1, muted: false });
+});
