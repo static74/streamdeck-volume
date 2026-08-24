@@ -102,3 +102,42 @@ Device name follows the default output automatically.
   `node:test`.
 - `audioctl` run standalone prints baseline + device: manual self-check.
 - End-to-end verified by hand on the Stream Deck + hardware.
+
+---
+
+# v1.1 features (approved 2026-08-24)
+
+## Press-and-turn output device switching
+
+Holding the dial and turning previews output devices; releasing
+commits the switch. A plain press still toggles mute, so the mute
+action moves from dial-down to dial-up (fires only when no rotation
+happened while pressed). Previewing must not switch audio per detent —
+the default output changes once, on release, via
+`kAudioHardwarePropertyDefaultOutputDevice`. The helper gains a `list`
+command (output-capable devices: name + uid) and a `setdefault <uid>`
+command (uid is the rest of the line — device UIDs contain spaces).
+The existing default-device listener already re-seeds and re-renders
+after the switch. Preview renders the candidate name in the title slot.
+
+## Sample-rate display and long-touch cycling
+
+The dial screen shows the current nominal sample rate (e.g. "96k")
+in a small text slot beside the volume value. This requires replacing
+the stock `$B1` layout with a custom layout JSON that reproduces its
+geometry (icon, title, value, bar) plus one `rate` text item. The
+helper reads `kAudioDevicePropertyNominalSampleRate` (settable, with a
+change listener) and `kAudioDevicePropertyAvailableNominalSampleRates`,
+reports both in the device event, and gains a `setrate <hz>` command.
+A long touch (touchTap with `hold: true`) cycles to the next available
+rate; a short tap still toggles mute. Rate cycling is a no-op when the
+device reports fewer than two rates.
+
+## Keypad variant
+
+The same action also accepts Keypad controllers (`Controllers:
+["Encoder", "Keypad"]`) so non-dial decks show volume as the key title
+("81%" or "Muted") with the speaker/muted icon as the image, and a key
+press toggles mute. Rendering branches on the action instance's
+capabilities (`setFeedback` present → dial; otherwise key). The model
+is unchanged and shared.
