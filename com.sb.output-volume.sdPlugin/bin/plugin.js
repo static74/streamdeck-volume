@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { applyKey, seedVolume, stepVolume } from "./model.js";
+import { applyKey, pressTracker, seedVolume, stepVolume } from "./model.js";
 
 const logger = streamDeck.logger.createScope("output-volume");
 
@@ -49,6 +49,9 @@ const state = {
 
 let helper = null;
 
+const press = pressTracker();
+let deviceList = []; // [{ name, uid }] — refreshed at startup and on device change
+
 function send(cmd) {
 	if (helper?.stdin.writable) helper.stdin.write(cmd + "\n");
 }
@@ -65,6 +68,7 @@ function handleEvent(ev) {
 		case "hello":
 			state.ax = ev.ax && ev.tap;
 			if (!state.ax) logger.warn("Accessibility not granted; media keys unavailable");
+			send("list");
 			break;
 		case "baseline":
 			state.baseline = ev.volumes;
@@ -81,8 +85,12 @@ function handleEvent(ev) {
 				state.muted = seed.muted;
 				checkSoundSourceRunning();
 			}
+			send("list");
 			break;
 		}
+		case "devices":
+			deviceList = ev.devices;
+			break;
 		case "vol":
 			if (state.mode === "native") state.volume = ev.v;
 			break;
@@ -149,6 +157,14 @@ function render() {
 	}
 }
 
+function renderPreview(device) {
+	if (!device) return;
+	const payload = { title: `→ ${device.name}`, value: "release to switch" };
+	for (const a of dial.actions) {
+		if (typeof a.setFeedback === "function") a.setFeedback(payload);
+	}
+}
+
 class VolumeDial extends SingletonAction {
 	onWillAppear() {
 		render();
@@ -157,6 +173,11 @@ class VolumeDial extends SingletonAction {
 	onDialRotate(ev) {
 		const ticks = ev.payload.ticks;
 		if (ticks === 0) return;
+		if (ev.payload.pressed) {
+			const r = press.rotate(ticks, deviceList.length);
+			if (r) renderPreview(deviceList[r.index]);
+			return;
+		}
 		if (state.mode === "native") {
 			if (state.volume == null) return;
 			send(`setvol ${stepVolume(state.volume, ticks)}`);
@@ -167,7 +188,19 @@ class VolumeDial extends SingletonAction {
 	}
 
 	onDialDown() {
-		this.#toggleMute();
+		const idx = deviceList.findIndex((d) => d.name === state.name);
+		press.down(Math.max(0, idx));
+	}
+
+	onDialUp() {
+		const r = press.up();
+		if (r.type === "switch") {
+			const d = deviceList[r.index];
+			if (d && d.name !== state.name) send(`setdefault ${d.uid}`);
+			render(); // clear the preview; the device event re-renders again after the switch
+		} else if (r.type === "mute") {
+			this.#toggleMute();
+		}
 	}
 
 	onTouchTap() {
