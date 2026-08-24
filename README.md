@@ -15,7 +15,10 @@ nothing**.
 
 - **Rotate** — volume up/down, one native step (6.25%) per detent
 - **Press / touch** — toggle mute
-- The device name and volume follow the default output automatically
+- **Hold + turn** — preview output devices; release to switch
+- **Long touch** — cycle the device's sample rate
+- On non-dial decks the same action works as a key: volume as the
+  title, press to mute
 
 ## Why this exists
 
@@ -82,6 +85,8 @@ until granted. Native-mode devices work without it.
   (Fixing this properly would require SoundSource's Shortcuts actions —
   a one-time Shortcuts.app setup this plugin deliberately avoids.)
 - SoundSource boost above 100% displays as 100%.
+- Switching devices or sample rates briefly interrupts audio (a
+  CoreAudio property change; unavoidable).
 
 ## Development
 
