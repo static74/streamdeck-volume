@@ -1,9 +1,9 @@
 # Output Volume — Stream Deck plugin for macOS
 
-A Stream Deck + dial that shows the current macOS output device's name
-and volume, and controls it — **including setups where SoundSource
-(ARK) applies volume in software and the stock Elgato volume dial shows
-nothing**.
+A Stream Deck plugin that shows the current macOS output device's name
+and volume, and controls it — best on a Stream Deck + dial —
+**including setups where SoundSource (ARK) applies volume in software
+and the stock Elgato volume dial shows nothing**.
 
 ```
 ┌─────────────────────────┐
@@ -17,8 +17,8 @@ nothing**.
 - **Press / touch** — toggle mute
 - **Hold + turn** — preview output devices; release to switch
 - **Long touch** — cycle the device's sample rate
-- On non-dial decks the same action works as a key: volume as the
-  title, press to mute
+- On button-only decks the same action works as a key: volume as the
+  title, press to mute (device switching and rate cycling are dial-only)
 
 ## Why this exists
 
@@ -50,12 +50,19 @@ Per device, the plugin picks one of two modes:
 
 A small compiled Swift helper (`audioctl`) does the system work and
 streams JSON events to the Node plugin, which owns the model and renders
-the dial with Elgato's stock `$B1` layout.
+the dial with a custom dial layout modeled on Elgato's stock look
+(name, %, bar, plus a sample-rate label).
+
+The device name, volume, and sample rate follow the default output
+automatically.
 
 ## Requirements
 
 - macOS 12+ (built and tested on macOS 26 with SoundSource 6.1)
-- Stream Deck app 6.5+ and a Stream Deck + (the action is dial-only)
+- Stream Deck app 6.5+ and a Stream Deck (best on a Stream Deck + —
+  the dial carries volume, device switching, and rate cycling; on
+  button-only decks the action shows volume on a key and mutes on
+  press)
 - Xcode Command Line Tools (`swiftc`) and Node.js/npm to build
 - SoundSource is only needed for devices without hardware volume, with
   its volume-keys option enabled (Settings → Super Volume Keys)
