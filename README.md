@@ -8,7 +8,7 @@ and the stock Elgato volume dial shows nothing**.
 ```
 ┌─────────────────────────┐
 │ 🔊  Benchmark 1.0       │
-│         81%             │
+│         81%      96k    │
 │  ███████████████░░░░    │
 └─────────────────────────┘
 ```
@@ -76,7 +76,7 @@ make install   # compiles the helper, installs npm deps, symlinks the plugin
 make restart   # restarts the Stream Deck app
 ```
 
-Drag **Output Volume** onto a dial.
+Drag **Output Volume** onto a dial. On button-only decks, drag it onto a key instead.
 
 **Permission**: posting media keys requires Accessibility access for
 the Stream Deck app (System Settings → Privacy & Security →

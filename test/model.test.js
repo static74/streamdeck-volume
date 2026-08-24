@@ -57,6 +57,7 @@ test("cycle wraps in both directions", async () => {
 	assert.equal(cycle(3, 0, -1), 2);
 	assert.equal(cycle(3, 1, -4), 0);
 	assert.equal(cycle(0, 0, 1), -1);
+	assert.equal(cycle(3, -1, 1), 0);
 });
 
 test("formatRate renders kHz labels", async () => {
@@ -64,6 +65,7 @@ test("formatRate renders kHz labels", async () => {
 	assert.equal(formatRate(44100), "44.1k");
 	assert.equal(formatRate(48000), "48k");
 	assert.equal(formatRate(96000), "96k");
+	assert.equal(formatRate(176400), "176.4k");
 });
 
 test("pressTracker: plain press resolves to mute", async () => {
