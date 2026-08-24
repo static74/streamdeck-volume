@@ -121,6 +121,7 @@ let listenerQueue = DispatchQueue(label: "audioctl.listeners")
 var currentDevice = AudioDeviceID(0)
 var volListener: AudioObjectPropertyListenerBlock?
 var muteListener: AudioObjectPropertyListenerBlock?
+var rateListener: AudioObjectPropertyListenerBlock?
 
 func emitDevice(_ dev: AudioDeviceID) {
     let hv = hasProperty(dev, kAudioHardwareServiceDeviceProperty_VirtualMainVolume)
@@ -134,12 +135,15 @@ func emitDevice(_ dev: AudioDeviceID) {
     ]
     if hv, let v = getVolume(dev) { obj["v"] = Double(v) }
     if hm, let m = getMute(dev) { obj["m"] = m }
+    if let rate = nominalRate(dev) { obj["rate"] = rate }
+    obj["rates"] = availableRates(dev)
     emit(obj)
 }
 
 func attachDeviceListeners(_ dev: AudioDeviceID) {
     var volAddr = addr(kAudioHardwareServiceDeviceProperty_VirtualMainVolume)
     var muteAddr = addr(kAudioDevicePropertyMute)
+    var rateAddr = addr(kAudioDevicePropertyNominalSampleRate, scope: kAudioObjectPropertyScopeGlobal)
     if currentDevice != 0 {
         if let vl = volListener {
             AudioObjectRemovePropertyListenerBlock(currentDevice, &volAddr, listenerQueue, vl)
@@ -147,10 +151,14 @@ func attachDeviceListeners(_ dev: AudioDeviceID) {
         if let ml = muteListener {
             AudioObjectRemovePropertyListenerBlock(currentDevice, &muteAddr, listenerQueue, ml)
         }
+        if let rl = rateListener {
+            AudioObjectRemovePropertyListenerBlock(currentDevice, &rateAddr, listenerQueue, rl)
+        }
     }
     currentDevice = dev
     volListener = nil
     muteListener = nil
+    rateListener = nil
     if hasProperty(dev, kAudioHardwareServiceDeviceProperty_VirtualMainVolume) {
         let block: AudioObjectPropertyListenerBlock = { _, _ in
             if let v = getVolume(dev) { emit(["e": "vol", "v": Double(v)]) }
@@ -165,6 +173,11 @@ func attachDeviceListeners(_ dev: AudioDeviceID) {
         AudioObjectAddPropertyListenerBlock(dev, &muteAddr, listenerQueue, block)
         muteListener = block
     }
+    let rateBlock: AudioObjectPropertyListenerBlock = { _, _ in
+        if let hz = nominalRate(dev) { emit(["e": "rate", "hz": hz]) }
+    }
+    AudioObjectAddPropertyListenerBlock(dev, &rateAddr, listenerQueue, rateBlock)
+    rateListener = rateBlock
 }
 
 func handleDeviceChange() {
@@ -240,6 +253,30 @@ func setDefaultOutput(uid: String) {
                                UInt32(MemoryLayout<AudioDeviceID>.size), &id)
 }
 
+// MARK: - Sample rate
+
+func nominalRate(_ dev: AudioDeviceID) -> Int? {
+    var a = addr(kAudioDevicePropertyNominalSampleRate, scope: kAudioObjectPropertyScopeGlobal)
+    var r = Float64(0)
+    var size = UInt32(MemoryLayout<Float64>.size)
+    return AudioObjectGetPropertyData(dev, &a, 0, nil, &size, &r) == noErr ? Int(r) : nil
+}
+
+func availableRates(_ dev: AudioDeviceID) -> [Int] {
+    var a = addr(kAudioDevicePropertyAvailableNominalSampleRates, scope: kAudioObjectPropertyScopeGlobal)
+    var size = UInt32(0)
+    guard AudioObjectGetPropertyDataSize(dev, &a, 0, nil, &size) == noErr, size > 0 else { return [] }
+    var ranges = [AudioValueRange](repeating: AudioValueRange(), count: Int(size) / MemoryLayout<AudioValueRange>.size)
+    guard AudioObjectGetPropertyData(dev, &a, 0, nil, &size, &ranges) == noErr else { return [] }
+    return Array(Set(ranges.map { Int($0.mMinimum) })).sorted()
+}
+
+func setRate(_ dev: AudioDeviceID, _ hz: Int) {
+    var a = addr(kAudioDevicePropertyNominalSampleRate, scope: kAudioObjectPropertyScopeGlobal)
+    var r = Float64(hz)
+    AudioObjectSetPropertyData(dev, &a, 0, nil, UInt32(MemoryLayout<Float64>.size), &r)
+}
+
 // MARK: - Main
 
 let tapOK = startTap()
@@ -267,6 +304,8 @@ DispatchQueue.global().async {
             if parts.count > 1, let v = Float32(parts[1]) { setVolume(currentDevice, v) }
         case "setmute":
             if parts.count > 1 { setMute(currentDevice, parts[1] == "1") }
+        case "setrate":
+            if parts.count > 1, let hz = Int(parts[1]) { setRate(currentDevice, hz) }
         case "baseline": emitBaseline()
         case "list": emitDeviceList()
         case "setdefault":
