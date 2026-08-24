@@ -5,6 +5,6 @@
 		{ "key": "icon", "type": "pixmap", "rect": [16, 38, 28, 28] },
 		{ "key": "value", "type": "text", "rect": [52, 36, 96, 32], "font": { "size": 24, "weight": 600 }, "alignment": "center" },
 		{ "key": "rate", "type": "text", "rect": [148, 44, 44, 20], "font": { "size": 12, "weight": 500 }, "alignment": "right", "color": "#999999" },
-		{ "key": "indicator", "type": "bar", "rect": [16, 76, 168, 12], "border_w": 0, "bar_bg_c": "0:#333333,1:#333333", "bar_fill_c": "#4da3ff" }
+		{ "key": "indicator", "type": "bar", "rect": [16, 76, 168, 12], "border_w": 0, "bar_bg_c": "0:#333333,1:#333333", "bar_fill_c": "#ffffff" }
 	]
 }
