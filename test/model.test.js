@@ -49,3 +49,19 @@ test("seed prefers own store over stale prefs over default", async () => {
 	assert.deepEqual(seedVolume("Other", store, prefs), { volume: 0.25, muted: true });
 	assert.deepEqual(seedVolume("New Device", store, prefs), { volume: 1, muted: false });
 });
+
+test("cycle wraps in both directions", async () => {
+	const { cycle } = await import("../com.sb.output-volume.sdPlugin/bin/model.js");
+	assert.equal(cycle(3, 0, 1), 1);
+	assert.equal(cycle(3, 2, 1), 0);
+	assert.equal(cycle(3, 0, -1), 2);
+	assert.equal(cycle(3, 1, -4), 0);
+	assert.equal(cycle(0, 0, 1), -1);
+});
+
+test("formatRate renders kHz labels", async () => {
+	const { formatRate } = await import("../com.sb.output-volume.sdPlugin/bin/model.js");
+	assert.equal(formatRate(44100), "44.1k");
+	assert.equal(formatRate(48000), "48k");
+	assert.equal(formatRate(96000), "96k");
+});

@@ -26,3 +26,14 @@ export function applyKey(state, key) {
 	const vol = state.volume ?? 1; // no baseline: SoundSource defaults new devices to 100%
 	return { volume: stepVolume(vol, key === "up" ? 1 : -1), muted: false };
 }
+
+// Wrapping index cycling, shared by device switching and rate cycling.
+export function cycle(length, index, delta) {
+	if (length === 0) return -1;
+	return (((index + delta) % length) + length) % length;
+}
+
+export function formatRate(hz) {
+	const k = hz / 1000;
+	return (Number.isInteger(k) ? k : k.toFixed(1)) + "k";
+}
